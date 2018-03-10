@@ -2,31 +2,18 @@
 
 DualVNH5019MotorShield Motors;
 
-//Line Sensor Pins
-uint8_t Left_Line_Pin = 0;
-uint8_t Right_Line_Pin = 0;
-uint8_t Center_Line_Pin = 0;
-uint8_t Back_Line_Pin = 0;
+//Sensor Pins
+uint8_t Left_Line_Pin = 11;
+uint8_t Right_Line_Pin = 13;
+uint8_t Center_Line_Pin = 5;
+uint8_t Back_Line_Pin = 3;
 
-//Distance Sensor Pins
-uint8_t Front_Center_Pin = A0;
-uint8_t Front_Right_Pin = A1;
-uint8_t Front_Left_Pin = A2;
-uint8_t Back_Pin = A3;
-uint8_t Left_Pin = A4;
-uint8_t Right_Pin = A5;
-
-//Sensor Threshold
-uint32_t Left_Line_Threshold = 0;
-uint32_t Right_Line_Threshold = 0;
-uint32_t Center_Line_Threshold = 0;
-uint32_t Back_Line_Threshold = 0;
-uint32_t Front_Center_Threshold = 0;
-uint32_t Front_Right_Threshold = 0;
-uint32_t Front_Left_Threshold = 0;
-uint32_t Back_Threshold = 0;
-uint32_t Left_Threshold = 0;
-uint32_t Right_Threshold = 0;
+uint8_t Front_Center_Pin = A3;
+uint8_t Front_Right_Pin = A2;
+uint8_t Front_Left_Pin = A4;
+uint8_t Back_Pin = A5;
+uint8_t Left_Pin = A0;
+uint8_t Right_Pin = A1;
 
 struct Sensors
 {
@@ -42,25 +29,77 @@ struct Sensors
   uint16_t back;
 };
 
+static Sensors sensorThresholds = {
+  .leftLine = 0,
+  .rightLine = 0,
+  .centerLine = 0,
+  .backLine = 0,
+  .left = 0,
+  .right = 0,
+  .frontLeft = 0,
+  .frontRight = 0,
+  .frontCenter = 0,
+  .back = 0
+};
+
 void setup()
 {
-  Serial.begin(9600);
+  Motors.init();
+
+  Serial.begin(230400);
   uint32_t initTimer;
   initTimer = millis();
   uint16_t count = 0;
-  while (millis() - initTimer < 3000)
+  while (millis() - initTimer < 2500)
   {
-    Left_Line_Threshold =  (readLine(Left_Line_Pin) + (count * Left_Line_Threshold)) / (count + 1);
-    Right_Line_Threshold =  (readLine(Right_Line_Pin) + (count * Right_Line_Threshold)) / (count + 1);
-    Center_Line_Threshold =  (readLine(Center_Line_Pin) + (count * Center_Line_Threshold)) / (count + 1);
-    Back_Line_Threshold =  (readLine(Back_Line_Pin) + (count * Back_Line_Threshold)) / (count + 1);
-    Front_Center_Threshold = (analogRead(Front_Center_Pin) + (count * Front_Center_Threshold)) / (count + 1);
-    Front_Left_Threshold = (analogRead(Front_Left_Pin) + (count * Front_Left_Threshold)) / (count + 1);
-    Front_Right_Threshold = (analogRead(Front_Right_Pin) + (count * Front_Right_Threshold)) / (count + 1);
-    Back_Threshold = (analogRead(Back_Pin) + (count * Back_Threshold)) / (count + 1);
-    Left_Threshold = (analogRead(Left_Pin) + (count * Left_Threshold)) / (count + 1);
-    Right_Threshold = (analogRead(Right_Pin) + (count * Right_Threshold)) / (count + 1);
-    count++;
+    if (count < 50 && millis() > 1000)
+    {
+      if (count < 15)
+      {
+        sensorThresholds.leftLine =  (readLine(Left_Line_Pin) + sensorThresholds.leftLine);
+        sensorThresholds.rightLine =  (readLine(Right_Line_Pin) + sensorThresholds.rightLine);
+        sensorThresholds.centerLine =  (readLine(Center_Line_Pin) + sensorThresholds.centerLine);
+        sensorThresholds.backLine =  (readLine(Back_Line_Pin) + sensorThresholds.backLine);
+      }
+      sensorThresholds.frontCenter = (analogRead(Front_Center_Pin) + sensorThresholds.frontCenter);
+      sensorThresholds.frontLeft = (analogRead(Front_Left_Pin) + sensorThresholds.frontLeft);
+      sensorThresholds.frontRight = (analogRead(Front_Right_Pin) + sensorThresholds.frontRight);
+      sensorThresholds.back = (analogRead(Back_Pin) + sensorThresholds.back);
+      sensorThresholds.left = (analogRead(Left_Pin) + sensorThresholds.left);
+      sensorThresholds.right = (analogRead(Right_Pin) +  sensorThresholds.right);
+      count++;
+    }
+  }
+  sensorThresholds.leftLine /= 30; if (sensorThresholds.leftLine < 100) {
+    sensorThresholds.leftLine = 100;
+  }
+  sensorThresholds.rightLine /= 30; if (sensorThresholds.rightLine < 100) {
+    sensorThresholds.rightLine = 100;
+  }
+  sensorThresholds.centerLine /= 30; if (sensorThresholds.centerLine < 100) {
+    sensorThresholds.centerLine = 100;
+  }
+  sensorThresholds.backLine /= 30; if (sensorThresholds.backLine < 100) {
+    sensorThresholds.backLine = 100;
+  }
+  count = count / 2;
+  sensorThresholds.left /= count; if (sensorThresholds.left < 100) {
+    sensorThresholds.left = 100;
+  }
+  sensorThresholds.right /= count; if (sensorThresholds.right < 100) {
+    sensorThresholds.right = 100;
+  }
+  sensorThresholds.frontLeft /= count; if (sensorThresholds.frontLeft < 100) {
+    sensorThresholds.frontLeft = 100;
+  }
+  sensorThresholds.frontRight /= count; if (sensorThresholds.frontRight < 100) {
+    sensorThresholds.frontRight = 100;
+  }
+  sensorThresholds.frontCenter /= count; if (sensorThresholds.frontCenter < 100) {
+    sensorThresholds.frontCenter = 100;
+  }
+  sensorThresholds.back /= count; if (sensorThresholds.back < 100) {
+    sensorThresholds.back = 100;
   }
 }
 
@@ -69,7 +108,6 @@ void loop()
   static Sensors sensorReadings;
   checkSensors(sensorReadings);
   static Sensors sensorFlags;
-
   static Sensors sensorProcessed = {
     .leftLine = sensorReadings.leftLine,
     .rightLine = sensorReadings.rightLine,
@@ -82,69 +120,276 @@ void loop()
     .frontCenter = sensorReadings.frontCenter,
     .back = sensorReadings.back
   };
+  sensorFilter(sensorProcessed, sensorReadings);
+  sensorCompare(sensorThresholds, sensorProcessed, sensorFlags);
 
-  sensorProcessed.leftLine = (sensorProcessed.leftLine * 3 + sensorReadings.leftLine) / 4;
-  sensorProcessed.rightLine = (sensorProcessed.rightLine * 3 + sensorReadings.rightLine) / 4;
-  sensorProcessed.centerLine = (sensorProcessed.centerLine * 3 + sensorReadings.centerLine) / 4;
-  sensorProcessed.backLine = (sensorProcessed.backLine * 3 + sensorReadings.backLine) / 4;
-  sensorProcessed.left = (sensorProcessed.left * 3 + sensorReadings.left) / 4;
-  sensorProcessed.right = (sensorProcessed.right * 3 + sensorReadings.right) / 4;
-  sensorProcessed.frontLeft = (sensorProcessed.frontLeft * 3 + sensorReadings.frontLeft) / 4;
-  sensorProcessed.frontRight = (sensorProcessed.frontRight * 3 + sensorReadings.frontRight) / 4;
-  sensorProcessed.frontCenter = (sensorProcessed.frontCenter * 3 + sensorReadings.frontCenter) / 4;
-  sensorProcessed.back = (sensorProcessed.back * 3 + sensorReadings.back) / 4;
 
-  if (sensorProcessed.left > Left_Threshold) {
-    sensorFlags.left = 1;
-  } else {
-    sensorFlags.left = 0;
-  }
-  if (sensorProcessed.right > Right_Threshold) {
-    sensorFlags.right = 1;
-  } else {
-    sensorFlags.right = 0;
-  }
-  if (sensorProcessed.back > Back_Threshold) {
-    sensorFlags.back = 1;
-  } else {
-    sensorFlags.back = 0;
-  }
-  if (sensorProcessed.frontLeft > Front_Left_Threshold) {
-    sensorFlags.frontLeft = 1;
-  } else {
-    sensorFlags.frontLeft = 0;
-  }
-  if (sensorProcessed.frontRight > Front_Right_Threshold) {
-    sensorFlags.frontRight = 1;
-  } else {
-    sensorFlags.frontRight = 0;
-  }
-  if (sensorProcessed.frontCenter > Front_Center_Threshold) {
-    sensorFlags.frontCenter = 1;
-  } else {
-    sensorFlags.frontCenter = 0;
-  }
-  if (sensorProcessed.rightLine > Right_Line_Threshold) {
-    sensorFlags.rightLine = 1;
-  } else {
-    sensorFlags.rightLine = 0;
-  }
-  if (sensorProcessed.leftLine > Left_Line_Threshold) {
-    sensorFlags.leftLine = 1;
-  } else {
-    sensorFlags.leftLine = 0;
-  }
-  if (sensorProcessed.backLine > Back_Line_Threshold) {
-    sensorFlags.backLine = 1;
-  } else {
-    sensorFlags.backLine = 0;
-  }
-  if (sensorProcessed.centerLine > Center_Line_Threshold) {
-    sensorFlags.centerLine = 1;
-  } else {
-    sensorFlags.centerLine = 0;
-  }
+  //    setLeft(200);
+  //   setRight(200);
+ // Serial.println(Motors.getM1Fault());
+ // Serial.println(Motors.getM2Fault());
 
+  if ((sensorFlags.centerLine == 1) || (sensorThresholds.leftLine == 1) || (sensorThresholds.rightLine == 1 ))
+  {
+    setLeft(-400);
+    setRight(-400);
+    delay(400);
+    setLeft(400);
+    setRight(-400);
+    delay(500);
+    setLeft(400);
+    setRight(400);
+    Serial.print("1\n");
+  }
+  else if (sensorFlags.backLine == 1 )
+  {
+    setLeft(400);
+    setRight(400);
+    Serial.print("2\n");
+  }
+  else
+  {
+    setLeft(200);
+    setRight(200);
+  }
+  /*  else if (sensorFlags.frontCenter == 1 )
+    {
+    setLeft(400);
+    setRight(400);
+    Serial.print("3\n");
+    }
+    else if (sensorFlags.frontLeft == 1 )
+    {
+    setLeft(250);
+    setRight(400);
+    Serial.print("4\n");
+    }
+    else if (sensorFlags.frontRight == 1 )
+    {
+    setLeft(400);
+    setRight(250);
+    Serial.print("5\n");
+    }
+    else if (sensorFlags.left == 1 )
+    {
+    setLeft(20);
+    setRight(400);
+    delay(100);
+    Serial.print("6\n");
+    }
+    else if (sensorFlags.right == 1 )
+    {
+    setLeft(400);
+    setRight(20);
+    delay(100);
+    Serial.print("7\n");
+    }
+    else if (sensorFlags.back == 1 )
+    {
+    setLeft(400);
+    setRight(-400);
+    delay(300);
+    Serial.print("8\n");
+    }
+    else
+    {
+    Serial.print("9\n");
+    static uint32_t timestamp = 0;
+    if (millis() - timestamp > 2000)
+    {
+    timestamp = millis();
+    randNumber1 = random(300);
+    setLeft(randNumber1);
+    randNumber2 = random(300);
+    setRight(randNumber2);
+    // Serial.print("\n");
+    // Serial.println(randNumber1);
+    // delay(1000);
+    }
+    if (randNumber1 )
+    }
+  */
+
+  /*
+    Serial.print("\nThreshold back: ");
+    Serial.print(sensorThresholds.back);
+    Serial.print("    Reading back: ");
+    Serial.print(sensorReadings.back);
+    Serial.print("    Processed back: ");
+    Serial.print(sensorProcessed.back);
+    Serial.print("   Flag back: ");
+    Serial.print(sensorFlags.back);
+
+
+    Serial.print("\nThreshold left: ");
+    Serial.print(sensorThresholds.left);
+    Serial.print("   Reading left: ");
+    Serial.print(sensorReadings.left);
+    Serial.print("   Processed left: ");
+    Serial.print(sensorProcessed.left);
+    Serial.print("   Flag left: ");
+    Serial.print(sensorFlags.left);
+
+    Serial.print("\nThreshold right: ");
+    Serial.print(sensorThresholds.right);
+    Serial.print("   Reading right: ");
+    Serial.print(sensorReadings.right);
+    Serial.print("   Processed right: ");
+    Serial.print(sensorProcessed.right);
+    Serial.print("   Flag right: ");
+    Serial.print(sensorFlags.right);
+
+    Serial.print("\nThreshold frontCenter: ");
+    Serial.print(sensorThresholds.frontCenter);
+    Serial.print("   Reading frontCenter: ");
+    Serial.print(sensorReadings.frontCenter);
+    Serial.print("   Processed frontCenter: ");
+    Serial.print(sensorProcessed.frontCenter);
+    Serial.print("   Flag frontCenter: ");
+    Serial.print(sensorFlags.frontCenter);
+
+    Serial.print("\nThreshold frontLeft: ");
+    Serial.print(sensorThresholds.frontLeft);
+    Serial.print("    Reading frontLeft: ");
+    Serial.print(sensorReadings.frontLeft);
+    Serial.print("   Processed frontLeft: ");
+    Serial.print(sensorProcessed.frontLeft);
+    Serial.print("   Flag frontLeft: ");
+    Serial.print(sensorFlags.frontLeft);
+
+    Serial.print("\nThreshold frontRight: ");
+    Serial.print(sensorThresholds.frontRight);
+    Serial.print("   Reading frontRight: ");
+    Serial.print(sensorReadings.frontRight);
+    Serial.print("   Processed frontRight: ");
+    Serial.print(sensorProcessed.frontRight);
+    Serial.print("   Flag frontRight: ");
+    Serial.print(sensorFlags.frontRight);
+  */
+  /*
+      Serial.print("\nThreshold rightLine: ");
+      Serial.print(sensorThresholds.rightLine);
+      Serial.print("   Reading rightLine: ");
+      Serial.print(sensorReadings.rightLine);
+      Serial.print("   Processed rightLine: ");
+      Serial.print(sensorProcessed.rightLine);
+      Serial.print("   Flag rightLine: ");
+      Serial.print(sensorFlags.rightLine);
+
+    Serial.print("\nThreshold leftLine: ");
+    Serial.print(sensorThresholds.leftLine);
+    Serial.print("   Reading leftLine: ");
+    Serial.print(sensorReadings.leftLine);
+    Serial.print("   Processed leftLine: ");
+    Serial.print(sensorProcessed.leftLine);
+    Serial.print("   Flag leftLine: ");
+    Serial.print(sensorFlags.leftLine);
+  
+  Serial.print("\nThreshold centerLine: ");
+  Serial.print(sensorThresholds.centerLine);
+  Serial.print("   Reading centerLine: ");
+  Serial.print(sensorReadings.centerLine);
+  Serial.print("   Processed centerLine: ");
+  Serial.print(sensorProcessed.centerLine);
+  Serial.print("   Flag centerLine: ");
+  Serial.print(sensorFlags.centerLine);
+  */
+              Serial.print("\nThreshold backLine: ");
+          Serial.print(sensorThresholds.backLine);
+          Serial.print("   Reading backLine: ");
+          Serial.print(sensorReadings.backLine);
+          Serial.print("   Processed backLine: ");
+          Serial.print(sensorProcessed.backLine);
+          Serial.print("   Flag backLine: ");
+          Serial.print(sensorFlags.backLine);
+
+/*
+          Serial.print("\n\n\n\n");
+          delay(700);*/
+}
+
+
+
+
+
+void setLeft(uint16_t speed)
+{
+  Motors.setM1Speed(-speed);
+}
+void setRight(uint16_t speed)
+{
+  Motors.setM2Speed(speed);
+}
+
+
+void sensorFilter(Sensors &Processed, Sensors &Readings)
+{
+  static const uint8_t numerator = 7;
+  static const uint8_t denominator = 8;
+  Processed.leftLine = (Processed.leftLine * 2 + Readings.leftLine) / 3;
+  Processed.rightLine = (Processed.rightLine * 2 + Readings.rightLine) / 3;
+  Processed.centerLine = (Processed.centerLine * 2 + Readings.centerLine) / 3;
+  Processed.backLine = (Processed.backLine * 2 + Readings.backLine) / 3;
+  Processed.left = (Processed.left * numerator + Readings.left) / denominator;
+  Processed.right = (Processed.right * numerator + Readings.right) / denominator;
+  Processed.frontLeft = (Processed.frontLeft * numerator + Readings.frontLeft) / denominator;
+  Processed.frontRight = (Processed.frontRight * numerator + Readings.frontRight) / denominator;
+  Processed.frontCenter = (Processed.frontCenter * numerator + Readings.frontCenter) / denominator;
+  Processed.back = (Processed.back * numerator + Readings.back) / denominator;
+}
+
+void sensorCompare(Sensors Thresholds, Sensors Processed, Sensors &Flags)
+{
+  if (Processed.left > Thresholds.left) {
+    Flags.left = 1;
+  } else {
+    Flags.left = 0;
+  }
+  if (Processed.right > Thresholds.right) {
+    Flags.right = 1;
+  } else {
+    Flags.right = 0;
+  }
+  if (Processed.back > Thresholds.back) {
+    Flags.back = 1;
+  } else {
+    Flags.back = 0;
+  }
+  if (Processed.frontLeft > Thresholds.frontLeft) {
+    Flags.frontLeft = 1;
+  } else {
+    Flags.frontLeft = 0;
+  }
+  if (Processed.frontRight > Thresholds.frontRight) {
+    Flags.frontRight = 1;
+  } else {
+    Flags.frontRight = 0;
+  }
+  if (Processed.frontCenter > Thresholds.frontCenter) {
+    Flags.frontCenter = 1;
+  } else {
+    Flags.frontCenter = 0;
+  }
+  if (Processed.rightLine < Thresholds.rightLine) {
+    Flags.rightLine = 1;
+  } else {
+    Flags.rightLine = 0;
+  }
+  if (Processed.leftLine < Thresholds.leftLine) {
+    Flags.leftLine = 1;
+  } else {
+    Flags.leftLine = 0;
+  }
+  if (Processed.backLine < Thresholds.backLine) {
+    Flags.backLine = 1;
+  } else {
+    Flags.backLine = 0;
+  }
+  if (Processed.centerLine < Thresholds.centerLine) {
+    Flags.centerLine = 1;
+  } else {
+    Flags.centerLine = 0;
+  }
 }
 void checkSensors(Sensors &sensors)
 {
@@ -159,23 +404,6 @@ void checkSensors(Sensors &sensors)
   sensors.left = analogRead(Left_Pin);
   sensors.right = analogRead(Right_Pin);
 }
-/*
-  void processSensors(Sensors readings, Sensors &results)
-  {
-  static Sensors Count = {
-    .leftLine = 0,
-    .rightLine = 0,
-    .centerLine = 0,
-    .backLine = 0,
-    .left = 0,
-    .right = 0,
-    .frontLeft = 0,
-    .frontRight = 0,
-    .frontCenter = 0,
-    .back = 0
-  };
-  }*/
-
 
 int16_t readLine(uint8_t pin)
 {
@@ -198,5 +426,3 @@ int16_t readDistance (uint8_t pin)
   temp = analogRead(pin);
   return temp;
 }
-
-bool checkLine();
