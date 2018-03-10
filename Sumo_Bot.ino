@@ -50,7 +50,7 @@ void setup()
   uint32_t initTimer;
   initTimer = millis();
   uint16_t count = 0;
-  while (millis() - initTimer < 2500)
+  while (millis() - initTimer < 2400)
   {
     if (count < 50 && millis() > 1000)
     {
@@ -82,7 +82,7 @@ void setup()
   sensorThresholds.backLine /= 30; if (sensorThresholds.backLine < 100) {
     sensorThresholds.backLine = 100;
   }
-  count = count / 2;
+  count = count *2 / 3;
   sensorThresholds.left /= count; if (sensorThresholds.left < 100) {
     sensorThresholds.left = 100;
   }
@@ -126,17 +126,17 @@ void loop()
 
   //    setLeft(200);
   //   setRight(200);
- // Serial.println(Motors.getM1Fault());
- // Serial.println(Motors.getM2Fault());
+  // Serial.println(Motors.getM1Fault());
+  // Serial.println(Motors.getM2Fault());
 
   if ((sensorFlags.centerLine == 1) || (sensorThresholds.leftLine == 1) || (sensorThresholds.rightLine == 1 ))
   {
     setLeft(-400);
     setRight(-400);
-    delay(400);
+    delay(700);
     setLeft(400);
     setRight(-400);
-    delay(500);
+    delay(300);
     setLeft(400);
     setRight(400);
     Serial.print("1\n");
@@ -147,68 +147,64 @@ void loop()
     setRight(400);
     Serial.print("2\n");
   }
-  else
+  else if (sensorFlags.frontCenter == 1 )
   {
-    setLeft(200);
-    setRight(200);
-  }
-  /*  else if (sensorFlags.frontCenter == 1 )
-    {
     setLeft(400);
     setRight(400);
     Serial.print("3\n");
-    }
+  }
     else if (sensorFlags.frontLeft == 1 )
     {
     setLeft(250);
-    setRight(400);
+    setRight(300);
     Serial.print("4\n");
     }
     else if (sensorFlags.frontRight == 1 )
     {
-    setLeft(400);
+    setLeft(300);
     setRight(250);
     Serial.print("5\n");
     }
     else if (sensorFlags.left == 1 )
     {
     setLeft(20);
-    setRight(400);
+    setRight(300);
     delay(100);
     Serial.print("6\n");
     }
     else if (sensorFlags.right == 1 )
     {
-    setLeft(400);
+    setLeft(300);
     setRight(20);
     delay(100);
     Serial.print("7\n");
-    }
+    }/*
     else if (sensorFlags.back == 1 )
     {
     setLeft(400);
     setRight(-400);
     delay(300);
     Serial.print("8\n");
-    }
-    else
-    {
+    }*/
+  else
+  {
     Serial.print("9\n");
     static uint32_t timestamp = 0;
-    if (millis() - timestamp > 2000)
+    if (millis() - timestamp > 700)
     {
-    timestamp = millis();
-    randNumber1 = random(300);
-    setLeft(randNumber1);
-    randNumber2 = random(300);
-    setRight(randNumber2);
-    // Serial.print("\n");
-    // Serial.println(randNumber1);
-    // delay(1000);
+      Serial.print("10\n");
+      timestamp = millis();
+      uint16_t randNumber1 = random(100) + 200;
+      setLeft(randNumber1);
+      uint16_t randNumber2 = random(100) + 200;
+      setRight(randNumber2);
+      // Serial.print("\n");
+      // Serial.println(randNumber1);
+      // delay(1000);
     }
-    if (randNumber1 )
-    }
-  */
+    //if (randNumber1 )
+  }
+
 
   /*
     Serial.print("\nThreshold back: ");
@@ -284,28 +280,28 @@ void loop()
     Serial.print(sensorProcessed.leftLine);
     Serial.print("   Flag leftLine: ");
     Serial.print(sensorFlags.leftLine);
-  
-  Serial.print("\nThreshold centerLine: ");
-  Serial.print(sensorThresholds.centerLine);
-  Serial.print("   Reading centerLine: ");
-  Serial.print(sensorReadings.centerLine);
-  Serial.print("   Processed centerLine: ");
-  Serial.print(sensorProcessed.centerLine);
-  Serial.print("   Flag centerLine: ");
-  Serial.print(sensorFlags.centerLine);
-  */
-              Serial.print("\nThreshold backLine: ");
-          Serial.print(sensorThresholds.backLine);
-          Serial.print("   Reading backLine: ");
-          Serial.print(sensorReadings.backLine);
-          Serial.print("   Processed backLine: ");
-          Serial.print(sensorProcessed.backLine);
-          Serial.print("   Flag backLine: ");
-          Serial.print(sensorFlags.backLine);
 
-/*
-          Serial.print("\n\n\n\n");
-          delay(700);*/
+    Serial.print("\nThreshold centerLine: ");
+    Serial.print(sensorThresholds.centerLine);
+    Serial.print("   Reading centerLine: ");
+    Serial.print(sensorReadings.centerLine);
+    Serial.print("   Processed centerLine: ");
+    Serial.print(sensorProcessed.centerLine);
+    Serial.print("   Flag centerLine: ");
+    Serial.print(sensorFlags.centerLine);
+
+    Serial.print("\nThreshold backLine: ");
+    Serial.print(sensorThresholds.backLine);
+    Serial.print("   Reading backLine: ");
+    Serial.print(sensorReadings.backLine);
+    Serial.print("   Processed backLine: ");
+    Serial.print(sensorProcessed.backLine);
+    Serial.print("   Flag backLine: ");
+    Serial.print(sensorFlags.backLine);
+  */
+  /*
+            Serial.print("\n\n\n\n");
+            delay(700);*/
 }
 
 
@@ -326,10 +322,10 @@ void sensorFilter(Sensors &Processed, Sensors &Readings)
 {
   static const uint8_t numerator = 7;
   static const uint8_t denominator = 8;
-  Processed.leftLine = (Processed.leftLine * 2 + Readings.leftLine) / 3;
-  Processed.rightLine = (Processed.rightLine * 2 + Readings.rightLine) / 3;
-  Processed.centerLine = (Processed.centerLine * 2 + Readings.centerLine) / 3;
-  Processed.backLine = (Processed.backLine * 2 + Readings.backLine) / 3;
+  Processed.leftLine = Readings.leftLine;
+  Processed.rightLine = Readings.rightLine;
+  Processed.centerLine = Readings.centerLine;
+  Processed.backLine =  Readings.backLine;
   Processed.left = (Processed.left * numerator + Readings.left) / denominator;
   Processed.right = (Processed.right * numerator + Readings.right) / denominator;
   Processed.frontLeft = (Processed.frontLeft * numerator + Readings.frontLeft) / denominator;
